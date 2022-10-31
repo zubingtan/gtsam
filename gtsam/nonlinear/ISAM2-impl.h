@@ -30,6 +30,8 @@
 
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm/copy.hpp>
+#include <glog/logging.h>
+
 namespace br {
 using namespace boost::range;
 using namespace boost::adaptors;
@@ -444,7 +446,7 @@ struct GTSAM_EXPORT UpdateImpl {
   static void ExpmapMasked(const VectorValues& delta, const KeySet& mask,
                            Values* theta) {
     gttic(ExpmapMasked);
-    assert(theta->size() == delta.size());
+    CHECK_EQ(theta->size(), delta.size());
     Values::iterator key_value;
     VectorValues::const_iterator key_delta;
 #ifdef GTSAM_USE_TBB
@@ -453,13 +455,15 @@ struct GTSAM_EXPORT UpdateImpl {
 #else
     for (key_value = theta->begin(), key_delta = delta.begin();
          key_value != theta->end(); ++key_value, ++key_delta) {
-      assert(key_value->key == key_delta->first);
+      CHECK_EQ(key_value->key, key_delta->first);
 #endif
       Key var = key_value->key;
-      assert(static_cast<size_t>(delta[var].size()) == key_value->value.dim());
-      assert(delta[var].allFinite());
       if (mask.exists(var)) {
-        Value* retracted = key_value->value.retract_(delta[var]);
+        const auto &var_delta = delta[var];
+        DCHECK_EQ(var_delta.size(), key_value->value.dim());
+        DCHECK(var_delta.allFinite())
+            << "Infinite delta is evaluated for " << DefaultKeyFormatter(var);
+        Value *retracted = key_value->value.retract_(var_delta);
         key_value->value = *retracted;
         retracted->deallocate_();
       }
@@ -480,7 +484,7 @@ struct GTSAM_EXPORT UpdateImpl {
     } else {
       linearFactors->push_back(*linearized);
     }
-    assert(linearFactors->size() == numNonlinearFactors);
+    CHECK_EQ(linearFactors->size(), numNonlinearFactors);
   }
 
   void augmentVariableIndex(const NonlinearFactorGraph& newFactors,

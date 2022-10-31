@@ -26,7 +26,8 @@
 #include <gtsam/base/FastSet.h>
 
 #include <boost/assign/list_inserter.hpp>
-#include <algorithm>
+
+#include <ostream>
 #include <vector>
 
 namespace gtsam {
@@ -246,6 +247,9 @@ public:
   GTSAM_EXPORT
   void print(const std::string& str = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const;
+
+  void print(std::ostream &ostream, const std::string &str = "",
+             const KeyFormatter &keyFormatter = DefaultKeyFormatter) const;
 
   GTSAM_EXPORT
   bool equals(const Ordering& other, double tol = 1e-9) const;

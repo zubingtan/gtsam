@@ -29,13 +29,14 @@
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/timing.h>
 
+#include <boost/assign/list_of.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/assign/list_of.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm/copy.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <glog/logging.h>
 
 #include <sstream>
 #include <limits>
@@ -75,7 +76,7 @@ HessianFactor::HessianFactor(const Scatter& scatter) {
 /* ************************************************************************* */
 HessianFactor::HessianFactor() :
     info_(cref_list_of<1>(1)) {
-  assert(info_.rows() == 1);
+  CHECK_EQ(info_.rows(), 1);
   constantTerm() = 0.0;
 }
 
@@ -257,15 +258,31 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
 }
 
 /* ************************************************************************* */
-void HessianFactor::print(const std::string& s,
-    const KeyFormatter& formatter) const {
-  cout << s << "\n";
-  cout << " keys: ";
-  for (const_iterator key = begin(); key != end(); ++key)
-    cout << formatter(*key) << "(" << getDim(key) << ") ";
-  cout << "\n";
-  gtsam::print(Matrix(info_.selfadjointView()),
-      "Augmented information matrix: ");
+void HessianFactor::print(const std::string &title,
+                          const KeyFormatter &formatter) const {
+  print(std::cout, title, formatter);
+}
+
+/* ************************************************************************* */
+void HessianFactor::print(std::ostream &stream, const std::string &title,
+                          const KeyFormatter &formatter) const {
+  stream << title << "\n  keys: ";
+  for (const_iterator key = begin(); key != end(); ++key) {
+    stream << formatter(*key) << "(" << getDim(key) << ") ";
+  }
+  stream << "\n";
+
+  auto information_matrix = Matrix(info_.selfadjointView());
+  gtsam::print(information_matrix, "Augmented information matrix: ", stream);
+  stream << "\n";
+
+  const Eigen::JacobiSVD<gtsam::Matrix> svd(information_matrix,
+                                            Eigen::ComputeThinU);
+  const double condition_number =
+      svd.singularValues()[0] /
+      svd.singularValues()[svd.singularValues().size() - 1];
+  stream << "The condition number = " << condition_number << '\n';
+  stream << "The singular values = " << svd.singularValues().transpose();
 }
 
 /* ************************************************************************* */
@@ -352,8 +369,8 @@ double HessianFactor::error(const VectorValues& c) const {
 /* ************************************************************************* */
 void HessianFactor::updateHessian(const KeyVector& infoKeys,
                                   SymmetricBlockMatrix* info) const {
+  CHECK(info != nullptr);
   gttic(updateHessian_HessianFactor);
-  assert(info);
   // Apply updates to the upper triangle
   DenseIndex nrVariablesInThisFactor = size(), nrBlocksInInfo = info->nBlocks() - 1;
   vector<DenseIndex> slots(nrVariablesInThisFactor + 1);
@@ -367,11 +384,10 @@ void HessianFactor::updateHessian(const KeyVector& infoKeys,
       const DenseIndex I = slots[i];  // because i<=j, slots[i] is valid.
 
       if (i == j) {
-        assert(I == J);
+        CHECK_EQ(I, J);
         info->updateDiagonalBlock(I, info_.diagonalBlock(i));
       } else {
-        assert(i < j);
-        assert(I != J);
+        CHECK_LT(i, j);
         info->updateOffDiagonalBlock(I, J, info_.aboveDiagonalBlock(i, j));
       }
     }
@@ -471,7 +487,7 @@ boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Or
   try {
     // Do dense elimination
     size_t nFrontals = keys.size();
-    assert(nFrontals <= size());
+    CHECK_LE(nFrontals, size());
     info_.choleskyPartial(nFrontals);
 
     // TODO(frank): pre-allocate GaussianConditional and write into it
@@ -481,11 +497,11 @@ boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Or
     // Erase the eliminated keys in this factor
     keys_.erase(begin(), begin() + nFrontals);
   } catch (const CholeskyFailed&) {
-#ifndef NDEBUG
-    cout << "Partial Cholesky on HessianFactor failed." << endl;
-    keys.print("Frontal keys ");
-    print("HessianFactor:");
-#endif
+    std::stringstream ss;
+    ss << "Partial Cholesky on HessianFactor failed.\n";
+    keys.print(ss, "Frontal keys ", DefaultKeyFormatter);
+    print(ss, "HessianFactor:", DefaultKeyFormatter);
+    LOG(ERROR) << ss.str();
     throw IndeterminantLinearSystemException(keys.front());
   }
 
@@ -499,7 +515,7 @@ VectorValues HessianFactor::solve() {
 
   // Do Cholesky Factorization
   const size_t n = size();
-  assert(size_t(info_.nBlocks()) == n + 1);
+  CHECK_EQ(size_t(info_.nBlocks()), n + 1);
   info_.choleskyPartial(n);
   auto R = info_.triangularView(0, n);
   auto eta = linearTerm();

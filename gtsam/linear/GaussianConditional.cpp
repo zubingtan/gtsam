@@ -30,9 +30,11 @@
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
+#include <glog/logging.h>
 
 #include <functional>
 #include <list>
+#include <sstream>
 #include <string>
 
 // In Wrappers we have no access to this so have a default ready
@@ -89,30 +91,42 @@ namespace gtsam {
 
   /* ************************************************************************ */
   void GaussianConditional::print(const string &s, const KeyFormatter& formatter) const {
-    cout << s << " p(";
+    print(std::cout, s, formatter);
+  }
+
+  /* ************************************************************************ */
+  void GaussianConditional::print(std::ostream &stream,
+                                  const std::string &title,
+                                  const KeyFormatter &formatter) const {
+    stream << title << " p(";
     for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
-      cout << (boost::format("%1%") % (formatter(*it))).str()
-           << (nrFrontals() > 1 ? " " : "");
+      stream << (boost::format("%1%") % (formatter(*it))).str()
+             << (nrFrontals() > 1 ? " " : "");
     }
 
     if (nrParents()) {
-      cout << " |";
+      stream << " |";
       for (const_iterator it = beginParents(); it != endParents(); ++it) {
-        cout << " " << (boost::format("%1%") % (formatter(*it))).str();
+        stream << " " << (boost::format("%1%") % (formatter(*it))).str();
       }
     }
-    cout << ")" << endl;
+    stream << ")" << endl;
 
-    cout << formatMatrixIndented("  R = ", R()) << endl;
+    stream << formatMatrixIndented("  R = ", R()) << endl;
     for (const_iterator it = beginParents() ; it != endParents() ; ++it) {
-      cout << formatMatrixIndented((boost::format("  S[%1%] = ")%(formatter(*it))).str(), getA(it))
-        << endl;
+      stream << formatMatrixIndented(
+                    (boost::format("  S[%1%] = ") % (formatter(*it))).str(),
+                    getA(it))
+             << endl;
     }
-    cout << formatMatrixIndented("  d = ", getb(), true) << "\n";
-    if (model_)
+    stream << formatMatrixIndented("  d = ", getb(), true) << "\n";
+    if (model_ != nullptr) {
+      // The noise model doesn't provide a interface to write information to a
+      // ostream. So this information we can't record.
       model_->print("  Noise model: ");
-    else
-      cout << "  No noise model" << endl;
+    } else {
+      stream << "  No noise model" << endl;
+    }
   }
 
   /* ************************************************************************* */
@@ -167,7 +181,10 @@ namespace gtsam {
     const Vector solution = R().triangularView<Eigen::Upper>().solve(rhs);
 
     // Check for indeterminant solution
-    if (solution.hasNaN()) {
+    if (!solution.allFinite()) {
+      std::stringstream ss;
+      print(ss, "GaussianConditional", DefaultKeyFormatter);
+      LOG(ERROR) << ss.str();
       throw IndeterminantLinearSystemException(keys().front());
     }
 
@@ -195,6 +212,14 @@ namespace gtsam {
     // Solve Matrix
     Vector soln = R().triangularView<Eigen::Upper>().solve(xS);
 
+    // Check for indeterminant solution
+    if (!soln.allFinite()) {
+      std::stringstream ss;
+      print(ss, "GaussianConditional", DefaultKeyFormatter);
+      LOG(ERROR) << ss.str();
+      throw IndeterminantLinearSystemException(keys().front());
+    }
+
     // Scale by sigmas
     if (model_)
       soln.array() *= model_->sigmas().array();
@@ -216,7 +241,12 @@ namespace gtsam {
     frontalVec = R().transpose().triangularView<Eigen::Lower>().solve(frontalVec);
 
     // Check for indeterminant solution
-    if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
+    if (!frontalVec.allFinite()) {
+      std::stringstream ss;
+      print(ss, "GaussianConditional", DefaultKeyFormatter);
+      LOG(ERROR) << ss.str();
+      throw IndeterminantLinearSystemException(keys().front());
+    };
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
       gy[*it].noalias() += -1.0 * getA(it).transpose() * frontalVec;

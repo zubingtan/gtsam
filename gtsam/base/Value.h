@@ -18,12 +18,14 @@
 
 #pragma once
 
-#include <gtsam/config.h>      // Configuration from CMake
+#include <memory>
+
+#include <boost/serialization/assume_abstract.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <gtsam/base/Vector.h>
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/assume_abstract.hpp>
-#include <memory>
+#include <gtsam/config.h> // Configuration from CMake
 
 namespace gtsam {
 

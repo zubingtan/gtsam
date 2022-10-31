@@ -17,19 +17,20 @@
  * @date    Dec 8, 2010
  */
 
-#include <gtsam/linear/linearExceptions.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/Scatter.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/Ordering.h>
+#include "gtsam/inference/Key.h"
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/cholesky.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/base/cholesky.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/VariableSlots.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/Scatter.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/linearExceptions.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/format.hpp>
@@ -590,6 +591,15 @@ void JacobianFactor::updateHessian(const KeyVector& infoKeys,
     // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below
     DenseIndex n = Ab_.nBlocks() - 1, N = info->nBlocks() - 1;
 
+    LOG(ERROR) << "n=" << n << ", N=" << N;
+    LOG(ERROR) << "Ab_ = \n" << Ab_.matrix();
+
+    std::stringstream ss;
+    for (const auto &key : infoKeys) {
+      ss << DefaultKeyFormatter(key) << ", ";
+    }
+    LOG(ERROR) << "infoKeys= " << ss.str();
+
     // Apply updates to the upper triangle
     // Loop over blocks of A, including RHS with j==n
     vector<DenseIndex> slots(n+1);
@@ -600,6 +610,9 @@ void JacobianFactor::updateHessian(const KeyVector& infoKeys,
       // Fill off-diagonal blocks with Ai'*Aj
       for (DenseIndex i = 0; i < j; ++i) {
         const DenseIndex I = slots[i];  // because i<j, slots[i] is valid.
+        if (I == J) {
+          LOG(FATAL) << "\n" << Ab_.matrix();
+        }
         info->updateOffDiagonalBlock(I, J, Ab_(i).transpose() * Ab_j);
       }
       // Fill diagonal block with Aj'*Aj

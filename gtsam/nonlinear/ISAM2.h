@@ -27,6 +27,7 @@
 #include <gtsam/nonlinear/ISAM2UpdateParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
+#include <stdexcept>
 #include <vector>
 
 namespace gtsam {
@@ -115,47 +116,6 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
   /** Compare equality */
   virtual bool equals(const ISAM2& other, double tol = 1e-9) const;
-
-  /**
-   * Add new factors, updating the solution and relinearizing as needed.
-   *
-   * Optionally, this function remove existing factors from the system to enable
-   * behaviors such as swapping existing factors with new ones.
-   *
-   * Add new measurements, and optionally new variables, to the current system.
-   * This runs a full step of the ISAM2 algorithm, relinearizing and updating
-   * the solution as needed, according to the wildfire and relinearize
-   * thresholds.
-   *
-   * @param newFactors The new factors to be added to the system
-   * @param newTheta Initialization points for new variables to be added to the
-   * system. You must include here all new variables occuring in newFactors
-   * (which were not already in the system).  There must not be any variables
-   * here that do not occur in newFactors, and additionally, variables that were
-   * already in the system must not be included here.
-   * @param removeFactorIndices Indices of factors to remove from system
-   * @param force_relinearize Relinearize any variables whose delta magnitude is
-   * sufficiently large (Params::relinearizeThreshold), regardless of the
-   * relinearization interval (Params::relinearizeSkip).
-   * @param constrainedKeys is an optional map of keys to group labels, such
-   * that a variable can be constrained to a particular grouping in the
-   * BayesTree
-   * @param noRelinKeys is an optional set of nonlinear keys that iSAM2 will
-   * hold at a constant linearization point, regardless of the size of the
-   * linear delta
-   * @param extraReelimKeys is an optional set of nonlinear keys that iSAM2 will
-   * re-eliminate, regardless of the size of the linear delta. This allows the
-   * provided keys to be reordered.
-   * @return An ISAM2Result struct containing information about the update
-   */
-  virtual ISAM2Result update(
-      const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
-      const Values& newTheta = Values(),
-      const FactorIndices& removeFactorIndices = FactorIndices(),
-      const boost::optional<FastMap<Key, int> >& constrainedKeys = boost::none,
-      const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
-      const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
-      bool force_relinearize = false);
 
   /**
    * Add new factors, updating the solution and relinearizing as needed.

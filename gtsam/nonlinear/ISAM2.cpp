@@ -16,6 +16,8 @@
  * @author  Michael Kaess, Richard Roberts, Frank Dellaert
  */
 
+#include "gtsam/base/types.h"
+#include "gtsam/linear/linearExceptions.h"
 #include <gtsam/nonlinear/ISAM2-impl.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/ISAM2Result.h>
@@ -27,6 +29,7 @@
 
 #include <algorithm>
 #include <map>
+#include <stdexcept>
 #include <utility>
 
 using namespace std;
@@ -390,24 +393,6 @@ void ISAM2::removeVariables(const KeySet& unusedKeys) {
     theta_.erase(key);
     fixedVariables_.erase(key);
   }
-}
-
-/* ************************************************************************* */
-ISAM2Result ISAM2::update(
-    const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const FactorIndices& removeFactorIndices,
-    const boost::optional<FastMap<Key, int> >& constrainedKeys,
-    const boost::optional<FastList<Key> >& noRelinKeys,
-    const boost::optional<FastList<Key> >& extraReelimKeys,
-    bool force_relinearize) {
-  ISAM2UpdateParams params;
-  params.constrainedKeys = constrainedKeys;
-  params.extraReelimKeys = extraReelimKeys;
-  params.force_relinearize = force_relinearize;
-  params.noRelinKeys = noRelinKeys;
-  params.removeFactorIndices = removeFactorIndices;
-
-  return update(newFactors, newTheta, params);
 }
 
 /* ************************************************************************* */

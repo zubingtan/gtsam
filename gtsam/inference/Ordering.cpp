@@ -257,9 +257,15 @@ Ordering Ordering::Metis(const MetisIndex& met) {
 }
 
 /* ************************************************************************* */
-void Ordering::print(const std::string& str,
-    const KeyFormatter& keyFormatter) const {
-  cout << str;
+void Ordering::print(const std::string &str,
+                     const KeyFormatter &keyFormatter) const {
+  print(std::cout, str, keyFormatter);
+}
+
+/* ************************************************************************* */
+void Ordering::print(std::ostream &ostream, const std::string &str,
+                     const KeyFormatter &keyFormatter) const {
+  ostream << str;
   // Print ordering in index order
   // Print the ordering with varsPerLine ordering entries printed on each line,
   // for compactness.
@@ -267,20 +273,20 @@ void Ordering::print(const std::string& str,
   bool endedOnNewline = false;
   for (size_t i = 0; i < size(); ++i) {
     if (i % varsPerLine == 0)
-      cout << "Position " << i << ": ";
+      ostream << "Position " << i << ": ";
     if (i % varsPerLine != 0)
-      cout << ", ";
-    cout << keyFormatter(at(i));
+      ostream << ", ";
+    ostream << keyFormatter(at(i));
     if (i % varsPerLine == varsPerLine - 1) {
-      cout << "\n";
+      ostream << "\n";
       endedOnNewline = true;
     } else {
       endedOnNewline = false;
     }
   }
   if (!endedOnNewline)
-    cout << "\n";
-  cout.flush();
+    ostream << "\n";
+  ostream.flush();
 }
 
 /* ************************************************************************* */

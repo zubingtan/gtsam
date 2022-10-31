@@ -21,16 +21,18 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/format.hpp>
+#include <glog/logging.h>
+
 #include <cmath>
 
 using namespace std;
 
 namespace gtsam {
 
-static const double negativePivotThreshold = -1e-1;
-static const double zeroPivotThreshold = 1e-6;
-static const double underconstrainedPrior = 1e-5;
-static const int underconstrainedExponentDifference = 12;
+static constexpr double negativePivotThreshold = -1e-1;
+static constexpr double zeroPivotThreshold = 1e-6;
+static constexpr double underconstrainedPrior = 1e-5;
+static constexpr int underconstrainedExponentDifference = 12;
 
 /* ************************************************************************* */
 static inline int choleskyStep(Matrix& ATA, size_t k, size_t order) {
@@ -75,7 +77,7 @@ static inline int choleskyStep(Matrix& ATA, size_t k, size_t order) {
 /* ************************************************************************* */
 pair<size_t, bool> choleskyCareful(Matrix& ATA, int order) {
   // Check that the matrix is square (we do not check for symmetry)
-  assert(ATA.rows() == ATA.cols());
+  CHECK_EQ(ATA.rows(), ATA.cols());
 
   // Number of rows/columns
   const size_t n = ATA.rows();
@@ -84,7 +86,7 @@ pair<size_t, bool> choleskyCareful(Matrix& ATA, int order) {
   if (order < 0)
     order = int(n);
 
-  assert(size_t(order) <= n);
+  CHECK_LE(size_t(order), n);
 
   // The index of the row after the last non-zero row of the square-root factor
   size_t maxrank = 0;
@@ -110,10 +112,10 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   if (nFrontal == 0)
     return true;
 
-  assert(ABC.cols() == ABC.rows());
-  assert(size_t(ABC.rows()) >= topleft);
+  CHECK_EQ(ABC.cols(), ABC.rows());
+  CHECK_GE(size_t(ABC.rows()), topleft);
   const size_t n = static_cast<size_t>(ABC.rows() - topleft);
-  assert(nFrontal <= size_t(n));
+  CHECK_LE(nFrontal, n);
 
   // Create views on blocks
   auto A = ABC.block(topleft, topleft, nFrontal, nFrontal);

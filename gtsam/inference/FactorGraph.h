@@ -378,6 +378,12 @@ class FactorGraph {
     return factors_.erase(first, last);
   }
 
+  /** 
+   * Deleta all factors and clear the factor graph. Note that The memory 
+   * will not be released.
+   */
+  void clear() { factors_.clear(); }
+
   /// @}
   /// @name Graph Display
   /// @{

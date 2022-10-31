@@ -20,7 +20,9 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/LabeledSymbol.h>
 
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+
 #include <iostream>
 
 using namespace std;
@@ -29,11 +31,13 @@ namespace gtsam {
 
 /* ************************************************************************* */
 string _defaultKeyFormatter(Key key) {
-  const Symbol asSymbol(key);
-  if (asSymbol.chr() > 0)
-    return (string) asSymbol;
-  else
-    return boost::lexical_cast<string>(key);
+  const Symbol symbol(key);
+  if (symbol.chr() >= 'A' && symbol.chr() <= 'z') {
+    return symbol.string();
+  }
+  return (boost::format("Key(%1%, %2%)") % static_cast<int>(symbol.chr()) %
+          symbol.index())
+      .str();
 }
 
 /* ************************************************************************* */

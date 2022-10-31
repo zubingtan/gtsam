@@ -22,6 +22,8 @@
 #include <gtsam/inference/Symbol.h>  // for selective linearization thresholds
 #include <gtsam/nonlinear/ISAM2-impl.h>
 
+#include "glog/logging.h"
+
 #include <boost/range/adaptors.hpp>
 #include <functional>
 #include <limits>
@@ -62,14 +64,7 @@ size_t DeltaImpl::UpdateGaussNewtonDelta(const ISAM2::Roots& roots,
     lastBacksubVariableCount = 0;
     for (const ISAM2::sharedClique& root : roots)
       lastBacksubVariableCount += optimizeWildfireNonRecursive(
-          root, wildfireThreshold, replacedKeys, delta);  // modifies delta
-
-#if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
-    for (VectorValues::const_iterator key_delta = delta->begin();
-         key_delta != delta->end(); ++key_delta) {
-      assert((*delta)[key_delta->first].allFinite());
-    }
-#endif
+          root, wildfireThreshold, replacedKeys, delta); // modifies delta
   }
 
   return lastBacksubVariableCount;

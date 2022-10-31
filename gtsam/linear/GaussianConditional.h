@@ -27,6 +27,7 @@
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/VectorValues.h>
 
+#include <ostream>
 #include <random> // for std::mt19937_64 
 
 namespace gtsam {
@@ -113,6 +114,11 @@ namespace gtsam {
     void print(
         const std::string& = "GaussianConditional",
         const KeyFormatter& formatter = DefaultKeyFormatter) const override;
+
+    // print ostream version.
+    void print(std::ostream &stream,
+               const std::string &title = "GaussianConditional",
+               const KeyFormatter &formatter = DefaultKeyFormatter) const;
 
     /** equals function */
     bool equals(const GaussianFactor&cg, double tol = 1e-9) const override;

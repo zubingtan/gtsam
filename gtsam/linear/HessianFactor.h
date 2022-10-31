@@ -25,6 +25,8 @@
 
 #include <boost/make_shared.hpp>
 
+#include <ostream>
+
 namespace gtsam {
 
   // Forward declarations
@@ -190,8 +192,12 @@ namespace gtsam {
       return boost::make_shared<HessianFactor>(*this); }
 
     /** Print the factor for debugging and testing (implementing Testable) */
-    void print(const std::string& s = "",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const override;
+    void
+    print(const std::string &title = "",
+          const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+
+    void print(std::ostream &stream, const std::string &title = "",
+               const KeyFormatter &formatter = DefaultKeyFormatter) const;
 
     /** Compare to another factor for testing (implementing Testable) */
     bool equals(const GaussianFactor& lf, double tol = 1e-9) const override;

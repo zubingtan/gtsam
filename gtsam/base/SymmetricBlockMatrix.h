@@ -26,6 +26,8 @@
 #include <stdexcept>
 #include <array>
 
+#include "glog/logging.h"
+
 namespace boost {
 namespace serialization {
 class access;
@@ -153,21 +155,21 @@ namespace gtsam {
 
     /// Get block above the diagonal (I, J).
     constBlock aboveDiagonalBlock(DenseIndex I, DenseIndex J) const {
-      assert(I < J);
+      CHECK_LT(I, J);
       return block_(I, J);
     }
 
     /// Return the square sub-matrix that contains blocks(i:j, i:j).
     Eigen::SelfAdjointView<constBlock, Eigen::Upper> selfadjointView(
         DenseIndex I, DenseIndex J) const {
-      assert(J > I);
+      CHECK_GT(J, I);
       return block_(I, I, J - I, J - I).selfadjointView<Eigen::Upper>();
     }
 
     /// Return the square sub-matrix that contains blocks(i:j, i:j) as a triangular view.
     Eigen::TriangularView<constBlock, Eigen::Upper> triangularView(DenseIndex I,
                                                                    DenseIndex J) const {
-      assert(J > I);
+      CHECK_GT(J, I);
       return block_(I, I, J - I, J - I).triangularView<Eigen::Upper>();
     }
 
@@ -176,8 +178,8 @@ namespace gtsam {
                                   DenseIndex i_endBlock,
                                   DenseIndex j_startBlock,
                                   DenseIndex j_endBlock) const {
-      assert(i_startBlock < j_startBlock);
-      assert(i_endBlock <= j_startBlock);
+      CHECK_LT(i_startBlock, j_startBlock);
+      CHECK_LE(i_endBlock, j_startBlock);
       return block_(i_startBlock, j_startBlock, i_endBlock - i_startBlock,
                    j_endBlock - j_startBlock);
     }
@@ -185,8 +187,8 @@ namespace gtsam {
     /// Get a range [i,j) from the matrix. Indices are in block units.
     Block aboveDiagonalRange(DenseIndex i_startBlock, DenseIndex i_endBlock,
                              DenseIndex j_startBlock, DenseIndex j_endBlock) {
-      assert(i_startBlock < j_startBlock);
-      assert(i_endBlock <= j_startBlock);
+      CHECK_LT(i_startBlock, j_startBlock);
+      CHECK_LE(i_endBlock, j_startBlock);
       return block_(i_startBlock, j_startBlock, i_endBlock - i_startBlock,
                    j_endBlock - j_startBlock);
     }
@@ -204,7 +206,7 @@ namespace gtsam {
     /// Set an off-diagonal block. Only the upper triangular portion of `xpr` is evaluated.
     template <typename XprType>
     void setOffDiagonalBlock(DenseIndex I, DenseIndex J, const XprType& xpr) {
-      assert(I != J);
+      CHECK_NE(I, J);
       if (I < J) {
         block_(I, J) = xpr;
       } else {
@@ -218,8 +220,8 @@ namespace gtsam {
       // TODO(gareth): Eigen won't let us add triangular or self-adjoint views
       // here, so we do it manually.
       auto dest = block_(I, I);
-      assert(dest.rows() == xpr.rows());
-      assert(dest.cols() == xpr.cols());
+      CHECK_EQ(dest.rows(), xpr.rows());
+      CHECK_EQ(dest.cols(), xpr.cols());
       for (DenseIndex col = 0; col < dest.cols(); ++col) {
         for (DenseIndex row = 0; row <= col; ++row) {
           dest(row, col) += xpr(row, col);
@@ -231,7 +233,7 @@ namespace gtsam {
     /// NOTE(emmett): This assumes noalias().
     template <typename XprType>
     void updateOffDiagonalBlock(DenseIndex I, DenseIndex J, const XprType& xpr) {
-      assert(I != J);
+      CHECK_NE(I, J);
       if (I < J) {
         block_(I, J).noalias() += xpr;
       } else {
@@ -323,9 +325,9 @@ namespace gtsam {
 
     /// Get an offset for a block index (in the active view).
     DenseIndex offset(DenseIndex block) const {
-      assert(block >= 0);
+      CHECK_GE(block, 0);
       const DenseIndex actual_index = block + blockStart();
-      assert(actual_index < nOffsets());
+      CHECK_LT(actual_index, nOffsets());
       return variableColOffsets_[actual_index];
     }
 
@@ -359,8 +361,8 @@ namespace gtsam {
     std::array<DenseIndex, 4> calcIndices(DenseIndex iBlock, DenseIndex jBlock,
                                           DenseIndex blockRows,
                                           DenseIndex blockCols) const {
-      assert(blockRows >= 0);
-      assert(blockCols >= 0);
+      CHECK_GE(blockRows, 0);
+      CHECK_GE(blockCols, 0);
 
       // adjust indices to account for start and size of blocks
       const DenseIndex denseI = offset(iBlock);
@@ -372,9 +374,9 @@ namespace gtsam {
 
     void assertInvariants() const
     {
-      assert(matrix_.rows() == matrix_.cols());
-      assert(matrix_.cols() == variableColOffsets_.back());
-      assert(blockStart_ < (DenseIndex)variableColOffsets_.size());
+      CHECK_EQ(matrix_.rows(), matrix_.cols());
+      CHECK_EQ(matrix_.cols(), variableColOffsets_.back());
+      CHECK_LT(blockStart_, (DenseIndex)variableColOffsets_.size());
     }
 
     template<typename ITERATOR>

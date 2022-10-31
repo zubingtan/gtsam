@@ -46,12 +46,8 @@ namespace gtsam {
 
   /* ************************************************************************ */
   VectorValues::VectorValues(const Vector& x, const Dims& dims) {
-    using Pair = pair<const Key, size_t>;
     size_t j = 0;
-    for (const Pair& v : dims) {
-      Key key;
-      size_t n;
-      boost::tie(key, n) = v;
+    for (const auto& [key, n] : dims) {
 #ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(key, x.segment(j, n));
 #else
@@ -78,7 +74,7 @@ namespace gtsam {
   VectorValues VectorValues::Zero(const VectorValues& other)
   {
     VectorValues result;
-    for(const KeyValuePair& v: other)
+    for(const auto& v: other)
 #ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(v.first, Vector::Zero(v.second.size()));
 #else
@@ -101,7 +97,7 @@ namespace gtsam {
   void VectorValues::update(const VectorValues& values)
   {
     iterator hint = begin();
-    for(const KeyValuePair& key_value: values)
+    for(const auto& key_value: values)
     {
       // Use this trick to find the value using a hint, since we are inserting from another sorted map
       size_t oldSize = values_.size();
@@ -350,7 +346,7 @@ namespace gtsam {
   VectorValues operator*(const double a, const VectorValues &v)
   {
     VectorValues result;
-    for(const VectorValues::KeyValuePair& key_v: v)
+    for(const auto& key_v: v)
 #ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(key_v.first, a * key_v.second);
 #else

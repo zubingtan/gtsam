@@ -69,14 +69,18 @@ Vector9 TangentPreintegration::UpdatePreintegrated(const Vector3& a_body,
   const Vector3 w_tangent = // angular velocity mapped back to tangent space
       local.applyInvDexp(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
   const Rot3 R(local.expmap());  // nRb: rotation of body in nav frame
-  const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
 
+  const Vector3 velocity_increment =
+      R * (a_body * dt + 0.5 * (w_body * dt).cross(a_body * dt));
+  const Vector3 new_velocity = velocity + velocity_increment;
+  const Vector3 new_position = position + 0.5 * (velocity + new_velocity) * dt;
+
   Vector9 preintegratedPlus;
-  preintegratedPlus <<                          // new preintegrated vector:
-      theta + w_tangent * dt,                   // theta
-      position + velocity * dt + a_nav * dt22,  // position
-      velocity + a_nav * dt;                    // velocity
+  preintegratedPlus <<         // new preintegrated vector:
+      theta + w_tangent * dt,  // theta
+      new_position,            // position
+      new_velocity;            // velocity
 
   if (A) {
     // Exact derivative of R*a with respect to theta:
